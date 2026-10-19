@@ -366,7 +366,6 @@ def _views_body(raw, gbe, title, comm, unit, span, b3):
     if ctx is None:
         st.info("No data for this selection.")
         return
-    _origin_stack(raw, ctx)
     _charts(ctx, proj)
     t_col, p_col, y_col = st.columns([2.2, 0.95, 1], gap="medium")  # table | full-year totals | YTD bars
     with t_col, st.container(border=True, key="mc_card_table"):
@@ -375,6 +374,7 @@ def _views_body(raw, gbe, title, comm, unit, span, b3):
         _pace(ctx, proj)
     with y_col, st.container(border=True, key="mc_card_ytd"):
         _ytd(ctx)
+    _origin_stack(raw, ctx)                                          # last: the by-origin breakdown
 
 
 # Arabica origins in blues / teals, Robusta origins in ambers / greens / red, so a type reads at a glance
@@ -384,7 +384,7 @@ STACK_COLORS = {"Brazil Arabica": "#0a2463", "Colombia": "#3e5fa8", "Honduras": 
 
 
 def _origin_stack(raw, ctx):
-    """Stacked bars per origin for the selected origins, on top: every month in the Years window, or each crop year
+    """Stacked bars per origin for the selected origins: every month in the Years window, or each crop year
     (the running year = YTD, so it stacks like for like with the months it has)."""
     factor, fmt = UNITS[ctx["unit"]]
     unit, shown, latest_cy, common = ctx["unit"], ctx["shown"], ctx["latest_cy"], ctx["common"]
