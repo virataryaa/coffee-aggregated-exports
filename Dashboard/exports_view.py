@@ -323,25 +323,25 @@ def _context(raw, gbe, comm, unit, span):
 
 
 def _views(title):
-    """One filter card (Type, Crop year, Years, Unit, Projection, Origin) drives the charts and the table.
-    The crop-year start re-labels the data and rotates MONTHS for this view only."""
+    """The filters (Type, Crop year, Years, Unit, Projection, Origin) live in the sidebar and drive the charts and the
+    table. The crop-year start re-labels the data and rotates MONTHS for this view only."""
     global MONTHS, START
-    with st.container(border=True, key="mc_filters"):
-        b0, b1, b2, b4, b3 = st.columns([3.0, 2.0, 1.6, 2.4, 1.0], vertical_alignment="bottom")
-        comm = b0.radio("Type", COMMS, horizontal=True, key="mc_ch_comm")
-        basis = b1.radio("Crop year", list(CY_PRESETS), horizontal=True, key="mc_cy_basis")
+    with st.sidebar:
+        st.markdown("<div class='sb-sep'></div>", unsafe_allow_html=True)
+        comm = st.radio("Type", COMMS, horizontal=True, key="mc_ch_comm")
+        basis = st.radio("Crop year", list(CY_PRESETS), horizontal=True, key="mc_cy_basis")
         seed("mc_ch_span", "Last 10")
-        span = b2.radio("Years", ["Last 5", "Last 10", "All"], horizontal=True, key="mc_ch_span")
-        unit = b4.radio("Unit", list(UNITS), horizontal=True, key="mc_ch_unit")
+        span = st.radio("Years", ["Last 5", "Last 10", "All"], horizontal=True, key="mc_ch_span")
+        unit = st.radio("Unit", list(UNITS), horizontal=True, key="mc_ch_unit")
+        b3 = st.container()                                          # the Projection chip is drawn here once the data is in
         pool = [o["name"] for o in ORIGINS if o["type"] in TYPES[comm]]
         first = [n for n in pool if n in DEFAULT_ORIGINS]               # Brazil Arabica / Vietnam to start with
         okey = f"mc_origin_{comm}"
         st.markdown("<div class='mc-lbl'>Origin</div>", unsafe_allow_html=True)
-        oc = st.columns([1.1, 12], vertical_alignment="center")
-        with oc[0].container(key="mc_selall"):
+        with st.container(key="mc_selall"):
             st.button("Select all", key=f"mc_all_{comm}", on_click=lambda k=okey, p=pool: st.session_state.__setitem__(k, p))
-        picked = oc[1].pills("Origin", pool, selection_mode="multi", default=None if okey in st.session_state else first,
-                            key=okey, label_visibility="collapsed")
+        picked = st.pills("Origin", pool, selection_mode="multi", default=None if okey in st.session_state else first,
+                          key=okey, label_visibility="collapsed")
     origins = tuple(n for n in pool if n in (picked or first))       # nothing picked = the starting origins
     start = CY_PRESETS[basis]
     saved = MONTHS, START
@@ -769,6 +769,28 @@ def _origin_values(origin: str) -> dict:
     return {(int(y), int(m)): float(b) for y, m, b in zip(d["year"], d["month"], d["bags"])}
 
 
+def _origin_sources(origin: str) -> dict:
+    """{(year, month): 'manual' | 'history' | 'tdm'} for the origin."""
+    d = dx.combine()
+    d = d[d["origin"] == origin]
+    return {(int(y), int(m)): src for y, m, src in zip(d["year"], d["month"], d["source"])}
+
+
+TDM_CELL = "background-color: #e6e9f0; color: #7a86a8"           # light grey: this month comes from TDM, not typed in
+
+
+def _grey_tdm(g: pd.DataFrame, srcs: dict):
+    """The grid as a Styler with the TDM-filled months in light grey."""
+    def paint(df):
+        out = pd.DataFrame("", index=df.index, columns=df.columns)
+        for y in df.index:
+            for m in range(1, 13):
+                if srcs.get((int(y), m)) == "tdm":
+                    out.loc[y, CAL[m - 1]] = TDM_CELL
+        return out
+    return g.style.apply(paint, axis=None)
+
+
 def _edit_grid(vals: dict, years: list) -> pd.DataFrame:
     """Rows = calendar years (oldest first), columns Jan..Dec (text cells)."""
     g = pd.DataFrame({CAL[m - 1]: [_fmt0(vals.get((y, m))) for y in years] for m in range(1, 13)},
@@ -867,12 +889,15 @@ def render_entry():
 
     with st.container(border=True):
         st.markdown(f"<div class='card-title'>{origin} exports, bags <span class='pill'>{o['type']}</span>"
-                    f"<span class='pill'>{source}</span></div>", unsafe_allow_html=True)
+                    f"<span class='pill'>{source}</span>"
+                    + ("<span class='pill' style='background:#e6e9f0;color:#7a86a8'>grey = TDM</span>" if o["source"] == "tdm" else "")
+                    + "</div>", unsafe_allow_html=True)
         cfg = {CAL[m - 1]: st.column_config.TextColumn(CAL[m - 1], alignment="right", width=74) for m in range(1, 13)}
         cfg["_index"] = st.column_config.TextColumn("Year", width=64)
         g = _edit_grid(vals, yr_list)
         key = f"en_edit_{origin}_{show_n[:3]}"
-        after = st.data_editor(g, column_config=cfg, disabled=not editable, width="content", row_height=26,
+        srcs = _origin_sources(origin)
+        after = st.data_editor(_grey_tdm(g, srcs) if "tdm" in srcs.values() else g, column_config=cfg, disabled=not editable, width="content", row_height=26,
                                height=len(g) * 26 + 48, key=key)
         if not editable:
             st.markdown("<div class='card-desc'>Read-only: add github_token in Secrets to edit.</div>", unsafe_allow_html=True)

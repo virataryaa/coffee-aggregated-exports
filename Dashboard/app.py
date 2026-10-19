@@ -54,10 +54,19 @@ div[role="radiogroup"] label:has(input:checked) div[data-testid="stMarkdownConta
 
 /* Section selector in the sidebar: large stacked pills; Entry (first) is dark orange when selected */
 [data-testid="stSidebarUserContent"] { padding-top: 1rem !important; }
-[data-testid="stSidebar"] div[role="radiogroup"] { display: flex; flex-direction: column; align-items: stretch; width: 100%; border-radius: 22px; padding: 5px; gap: 3px; }
-[data-testid="stSidebar"] div[role="radiogroup"] label { padding: 8px 18px !important; }
-[data-testid="stSidebar"] div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p { font-size: 15px !important; }
-[data-testid="stSidebar"] div[role="radiogroup"] label:first-of-type:has(input:checked) { background: #c2410c !important; }
+[data-testid="stSidebar"] .st-key-sec_nav div[role="radiogroup"] { display: flex; flex-direction: column; align-items: stretch; width: 100%; border-radius: 22px; padding: 5px; gap: 3px; }
+[data-testid="stSidebar"] .st-key-sec_nav div[role="radiogroup"] label { padding: 8px 18px !important; }
+[data-testid="stSidebar"] .st-key-sec_nav div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p { font-size: 15px !important; }
+[data-testid="stSidebar"] .st-key-sec_nav div[role="radiogroup"] label:first-of-type:has(input:checked) { background: #c2410c !important; }
+/* Filters in the sidebar: compact pills that wrap, small navy caps labels */
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] { min-height: 0; margin-bottom: 4px; }
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p, .mc-lbl { font-size: 10.5px !important; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; color: #0a2463 !important; margin: 0 0 4px; }
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.55rem; }
+.sb-sep { border-top: 1px solid #dfe3ee; margin: 10px 0 2px; }
+[data-testid="stSidebar"] [data-testid="stButtonGroup"] { border-radius: 16px; }
+[data-testid="stSidebar"] div[role="radiogroup"] { display: flex; flex-wrap: wrap; width: 100%; border-radius: 16px; }
+[data-testid="stSidebar"] div[role="radiogroup"] label { padding: 3px 11px !important; }
 .sb-label { font-size: 11px; color: #7a86a8; text-transform: uppercase; letter-spacing: .06em; margin: 6px 0 4px; }
 .sb-title { font-family: 'Fraunces', Georgia, serif; font-size: 1.5rem; font-weight: 600; color: #0a2463; margin-bottom: 2px; }
 .page-title { color: #0a2463; font-weight: 700; font-size: 1.25rem; margin: 0 0 6px 0; }
@@ -89,7 +98,8 @@ for _k in KEEP:
 with st.sidebar:
     st.markdown("<div class='sb-title'>Coffee Exports</div>", unsafe_allow_html=True)
     st.markdown("<div class='sb-label'>Section</div>", unsafe_allow_html=True)
-    section = st.radio("Section", ["Entry", "Exports"], index=1, label_visibility="collapsed", key="section")
+    with st.container(key="sec_nav"):
+        section = st.radio("Section", ["Entry", "Exports"], index=1, label_visibility="collapsed", key="section")
 
 if section == "Entry":
     ev.render_entry()
