@@ -20,6 +20,7 @@ MONTHS = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", 
 CAL = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 START = 7                    # calendar month the crop year starts in; set per view in _views
 CY_PRESETS = {"Oct–Sep": 10, "Jul–Jun": 7, "Calendar": 1}
+DEFAULT_ORIGINS = ("Brazil Arabica", "Vietnam")                     # shown first; Select all adds the rest
 MANUAL_PATH, SETTINGS_PATH = "Database/manual_exports.csv", "Database/settings.json"          # paths in the repo
 TYPES = {"Arabica": ["Arabica"], "Robusta": ["Robusta"], "Arabica + Robusta": ["Arabica", "Robusta"]}
 COMMS = list(TYPES)
@@ -333,10 +334,15 @@ def _views(title):
         span = b2.radio("Years", ["Last 5", "Last 10", "All"], horizontal=True, key="mc_ch_span")
         unit = b4.radio("Unit", list(UNITS), horizontal=True, key="mc_ch_unit")
         pool = [o["name"] for o in ORIGINS if o["type"] in TYPES[comm]]
+        first = [n for n in pool if n in DEFAULT_ORIGINS]               # Brazil Arabica / Vietnam to start with
+        okey = f"mc_origin_{comm}"
         st.markdown("<div class='mc-lbl'>Origin</div>", unsafe_allow_html=True)
-        picked = st.pills("Origin", pool, selection_mode="multi", default=pool, key=f"mc_origin_{comm}",
-                          label_visibility="collapsed")
-    origins = tuple(n for n in pool if n in (picked or pool))        # nothing picked = all
+        oc = st.columns([1.1, 12], vertical_alignment="center")
+        with oc[0].container(key="mc_selall"):
+            st.button("Select all", key=f"mc_all_{comm}", on_click=lambda k=okey, p=pool: st.session_state.__setitem__(k, p))
+        picked = oc[1].pills("Origin", pool, selection_mode="multi", default=None if okey in st.session_state else first,
+                            key=okey, label_visibility="collapsed")
+    origins = tuple(n for n in pool if n in (picked or first))       # nothing picked = the starting origins
     start = CY_PRESETS[basis]
     saved = MONTHS, START
     START, MONTHS = start, [CAL[(start - 1 + i) % 12] for i in range(12)]
@@ -360,6 +366,7 @@ def _views_body(raw, gbe, title, comm, unit, span, b3):
     if ctx is None:
         st.info("No data for this selection.")
         return
+    _origin_stack(raw, ctx)
     _charts(ctx, proj)
     t_col, p_col, y_col = st.columns([2.2, 0.95, 1], gap="medium")  # table | full-year totals | YTD bars
     with t_col, st.container(border=True, key="mc_card_table"):
@@ -368,6 +375,47 @@ def _views_body(raw, gbe, title, comm, unit, span, b3):
         _pace(ctx, proj)
     with y_col, st.container(border=True, key="mc_card_ytd"):
         _ytd(ctx)
+
+
+# Arabica origins in blues / teals, Robusta origins in ambers / greens / red, so a type reads at a glance
+STACK_COLORS = {"Brazil Arabica": "#0a2463", "Colombia": "#3e5fa8", "Honduras": "#7f9bd1", "Ethiopia": "#1f8a9c",
+                "Peru": "#8fc7d0", "Vietnam": "#c98a1f", "Brazil Robusta": "#e2b768", "Indonesia": "#1f9d6f",
+                "Uganda": "#9fd1bb", "India": "#c94a4a"}
+
+
+def _origin_stack(raw, ctx):
+    """Stacked bars per origin for the selected origins, on top: every month in the Years window, or each crop year
+    (the running year = YTD, so it stacks like for like with the months it has)."""
+    factor, fmt = UNITS[ctx["unit"]]
+    unit, shown, latest_cy, common = ctx["unit"], ctx["shown"], ctx["latest_cy"], ctx["common"]
+    d = raw[raw["crop_year"].isin(shown)].copy()
+    d["v"] = d["bags"] * factor
+    order = [n for n in NAMES if n in set(d["origin"])]
+    with st.container(border=True, key="mc_card_stack"):
+        view = chart_head("Exports by origin", f"{unit} · stacked, selected origins",
+                          lambda w: w.radio("Origin view", ["Monthly", "Crop year"], horizontal=True, key="mc_stackview",
+                                            label_visibility="collapsed"))
+        fig = go.Figure()
+        if view == "Monthly":
+            d["x"] = [month_dates(cy, int(cm)) for cy, cm in zip(d["crop_year"], d["cm"])]
+            g = d.groupby(["origin", "x"], as_index=False)["v"].sum()
+            for o in order:
+                t = g[g["origin"] == o].sort_values("x")
+                fig.add_trace(go.Bar(x=t["x"], y=t["v"], name=o, marker_color=STACK_COLORS[o],
+                                     hovertemplate=f"{o}: %{{y:{fmt}}} {unit}<extra></extra>"))
+            style_kw = dict(unified=True, bargap=0.15)
+        else:
+            if common < 12:                                        # the running year only counts the months it has
+                d = d[(d["crop_year"] != latest_cy) | (d["cm"] <= common)]
+            g = d.groupby(["origin", "crop_year"], as_index=False)["v"].sum()
+            labels = {y: (f"{y} YTD" if y == latest_cy and common < 12 else y) for y in shown}
+            for o in order:
+                t = g[g["origin"] == o].set_index("crop_year")["v"].reindex(shown)
+                fig.add_trace(go.Bar(x=[labels[y] for y in shown], y=t.values, name=o, marker_color=STACK_COLORS[o],
+                                     hovertemplate=f"{o}: %{{y:{fmt}}} {unit}<extra></extra>"))
+            style_kw = dict(unified=True, bargap=0.3, xaxis=dict(type="category"))
+        show(style(fig, height=330, legend="top", fmt=fmt, short=unit == "Bags", barmode="stack", **style_kw),
+             key="mc_stack")
 
 
 def _cv(v, unit, fmt):

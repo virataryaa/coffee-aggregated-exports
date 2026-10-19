@@ -35,6 +35,10 @@ div[role="radiogroup"] label:has(input:checked) div[data-testid="stMarkdownConta
 [data-testid="stBaseButton-pills"] p, [data-testid="stBaseButton-pillsActive"] p { font-size: 12px !important; }
 [data-testid="stBaseButton-pillsActive"] p { font-weight: 600; color: #ffffff !important; }
 
+.st-key-mc_selall button { min-height: 0 !important; padding: 3px 14px !important; border-radius: 999px !important;
+    background: #ffffff !important; border: 1px solid #b9c6e6 !important; color: #0a2463 !important; box-shadow: none !important; }
+.st-key-mc_selall button p { font-size: 12px !important; font-weight: 600; color: #0a2463 !important; }
+
 /* Selects: white bg, dark text */
 [data-baseweb="popover"] [data-baseweb="menu"] { background: #ffffff !important; }
 [data-baseweb="popover"] [data-baseweb="menu"] li,
@@ -77,7 +81,7 @@ div[role="radiogroup"] label:has(input:checked) div[data-testid="stMarkdownConta
 # Widgets that are not drawn in a run lose their value (e.g. the Exports filters while Entry is open).
 # Keep a copy of the ones we care about and put it back before the widgets are created.
 KEEP = (["section", "mc_ch_comm", "mc_ch_unit", "mc_ch_span", "mc_cy_basis", "mc_pj_method", "mc_view", "mc_cumview",
-         "mc_roll", "en_origin", "en_years"] + [f"mc_origin_{c}" for c in ev.COMMS])
+         "mc_roll", "mc_stackview", "en_origin", "en_years"] + [f"mc_origin_{c}" for c in ev.COMMS])
 for _k in KEEP:
     if _k not in st.session_state and f"_keep_{_k}" in st.session_state:
         st.session_state[_k] = st.session_state[f"_keep_{_k}"]
