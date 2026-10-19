@@ -11,7 +11,7 @@ BAGS_PER_TONNE = 1000 / 60            # 60 kg bags
 ORIGINS = [
     dict(name="Brazil Arabica", type="Arabica", reporter="BR", source="manual"),
     dict(name="Colombia",       type="Arabica", reporter="CO", source="manual"),
-    dict(name="Honduras",       type="Arabica", reporter="HN", source="manual"),
+    dict(name="Honduras",       type="Arabica", reporter="HN", source="tdm", share=1.0),
     dict(name="Ethiopia",       type="Arabica", reporter="ET", source="tdm", share=1.0),
     dict(name="Peru",           type="Arabica", reporter="PE", source="tdm", share=1.0),
     dict(name="Vietnam",        type="Robusta", reporter="VN", source="manual"),

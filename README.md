@@ -21,16 +21,15 @@ Aggregated coffee exports of the major origins, by crop year (Oct-Sep, Jul-Jun o
 
 ## Where each number comes from
 
-Per origin and month: **manual entry > history > TDM**. TDM only fills Ethiopia, Peru, Indonesia and India (see
-`Dashboard/origins.py`), in months the history does not have, as tonnes / 0.06 x share. Ethiopia and Peru are pure Arabica
+Per origin and month: **manual entry > history > TDM**. TDM only fills Honduras, Ethiopia, Peru, Indonesia and India (see
+`Dashboard/origins.py`), in months the history does not have, as tonnes / 0.06 x share. Honduras, Ethiopia and Peru are pure Arabica
 (share 1.0). Indonesia and India export both types, so only a share of the tonnage counts as Robusta; the defaults
 (0.76 and 0.92) come from the last 12 months of history against TDM and can be changed on the Entry page.
-Brazil (both types), Colombia, Honduras, Vietnam and Uganda are manual: TDM has no Arabica/Robusta split for Brazil,
+Brazil (both types), Colombia, Vietnam and Uganda are manual: TDM has no Arabica/Robusta split for Brazil,
 Vietnam is not reliable in TDM and Uganda has no TDM data.
 
 An aggregate only counts a month when every chosen origin has a number for it, so an origin that has not reported
-yet never shows up as a drop. Honduras starts in Oct 2017, so the full Arabica aggregate starts there; untick an origin
-to see a longer history.
+yet never shows up as a drop. The full Arabica aggregate starts in Oct 2015 (Peru history starts then; Honduras comes from TDM before Oct 2017).
 
 ## Updating data
 
